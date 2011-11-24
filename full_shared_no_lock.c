@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	double timer_spent;
 		
 	if (argc < 4) {
-		printf("%s vsize nint npairs [affinities]\n", argv[0]);
+		printf("%s vsize nint npairs\n", argv[0]);
 		exit(1);
 	}
 	
@@ -68,12 +68,7 @@ int main(int argc, char **argv)
 	nint = atoi(argv[2]);
 	npairs = atoi(argv[3]);
 	
-	c_set_number_of_threads(npairs*2);
-	for (i=0; i<npairs*2; i++) {
-		c_set_affinity_of_thread(i, atoi(argv[4+i]));
-	}
-
-	c_process_affinity();
+	mapping_lib_omp_automate(npairs*2);
 	
 	r = malloc(sizeof(resource_t) * npairs);
 	assert(r != NULL);
@@ -85,13 +80,6 @@ int main(int argc, char **argv)
 		assert(r[i].v != NULL);
 	}
 
-	#pragma omp parallel
-	{
-		int id;
-		id = omp_get_thread_num();
-		simics_magic(id+1);
-	}
-	
 	gettimeofday(&timer_start, NULL);
 		
 	#pragma omp parallel
@@ -109,6 +97,8 @@ int main(int argc, char **argv)
 	timer_spent = timer_end.tv_sec - timer_start.tv_sec + (timer_end.tv_usec - timer_start.tv_usec) / 1000000.0;
 
 	printf("Time spent: %.6fs\n", timer_spent);
+	
+	mapping_lib_omp_automate_finish();
 		
 	return 0;
 }
