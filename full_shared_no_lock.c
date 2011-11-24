@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "schedutil.h"
+
+#include "mapping-lib.h"
 
 int vsize, npairs, nint;
 

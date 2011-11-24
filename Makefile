@@ -1,13 +1,16 @@
 CC=gcc
 CFLAGS=-O2 -fopenmp
-LDFLAGS=-O2 -fopenmp
-MAPPINGLIBFLAGS=-DENABLE_OPENMP -DMAPPING_LIB_WITH_PAPI
+LDFLAGS=mapping-lib.o $(CFLAGS)
+MAPPINGLIBFLAGS=-DENABLE_OPENMP -DMAPPING_LIB_WITH_PAPI -I../libmapping
 
-all: mappinglib
-	$(CC) -o full_shared_no_lock full_shared_no_lock.c mapping-lib.o
+all: mapping-lib.o full_shared_no_lock
+	$(CC) -o full_shared_no_lock full_shared_no_lock.o $(LDFLAGS)
 
-mappinglib:
-	$(CC) ../libmapping/mapping-lib.c -o mapping-lib.o $(MAPPINGLIBFLAGS)
+full_shared_no_lock:
+	$(CC) -c full_shared_no_lock.c $(CFLAGS) $(MAPPINGLIBFLAGS)
+
+mapping-lib.o:
+	$(CC) ../libmapping/mapping-lib.c -o mapping-lib.o $(CFLAGS) $(MAPPINGLIBFLAGS)
 
 clean:
 	- rm *.o
