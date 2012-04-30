@@ -5,7 +5,7 @@
 
 #include "libmapping.h"
 
-int vsize, npairs, nint;
+int vsize, npairs, nint, nphases;
 
 typedef struct resource_t {
 	volatile int *v;
@@ -15,10 +15,10 @@ typedef struct resource_t {
 
 resource_t *r;
 
-void reader(int id)
+void reader(resource_t *p)
 {
 	int i, j, z = 0;
-	resource_t *p = r + id/2;
+	//resource_t *p = r + id/2;
 	
 	#pragma omp atomic
 	p->ready++;
@@ -34,10 +34,10 @@ void reader(int id)
 	}
 }
 
-void writer(int id)
+void writer(resource_t *p)
 {
 	int i, j;
-	resource_t *p = r + id/2;
+	//resource_t *p = r + id/2;
 
 	#pragma omp atomic
 	p->ready++;
@@ -59,25 +59,26 @@ int main(int argc, char **argv)
 	struct timeval timer_start, timer_end;
 	double timer_spent;
 		
-	if (argc < 4) {
-		printf("%s vsize nint npairs\n", argv[0]);
+	if (argc != 5) {
+		printf("%s vsize nint nphases npairs\n", argv[0]);
 		exit(1);
 	}
 	
 	vsize = atoi(argv[1]);
 	nint = atoi(argv[2]);
-	npairs = atoi(argv[3]);
+	nphases = atoi(argv[3]);
+	npairs = atoi(argv[4]);
 	
 	omp_set_num_threads(npairs*2);
 	
 	libmapping_omp_automate();
 	
-	r = malloc(sizeof(resource_t) * npairs);
+	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
 	
 	for (i=0; i<npairs; i++) {
 		r[i].ready = 0;
-		r[i].v = malloc(sizeof(int) * vsize);
+		r[i].v = calloc(vsize, sizeof(int));
 		r[i].hold = 0;
 		assert(r[i].v != NULL);
 	}
@@ -87,11 +88,15 @@ int main(int argc, char **argv)
 	#pragma omp parallel
 	{
 		int id;
+		resource_t *p;
+		
 		id = omp_get_thread_num();
+		p = r + id/2;
+	
 		if (id & 0x01)
-			reader(id);
+			reader(p);
 		else
-			writer(id);
+			writer(p);
 	}
 
 	gettimeofday(&timer_end, NULL);
