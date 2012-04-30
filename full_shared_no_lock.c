@@ -81,6 +81,29 @@ int main(int argc, char **argv)
 	libmapping_omp_automate();
 	
 	for (i=0; i<nphases; i++) {
+		#ifdef REMAP
+			assert(npairs == 8);
+			if ((i % 2) == 0) {
+				libmapping_set_aff_of_thread(0, 0);
+				libmapping_set_aff_of_thread(1, 4);
+				libmapping_set_aff_of_thread(2, 2);
+				libmapping_set_aff_of_thread(3, 6);
+				libmapping_set_aff_of_thread(4, 1);
+				libmapping_set_aff_of_thread(5, 5);
+				libmapping_set_aff_of_thread(6, 3);
+				libmapping_set_aff_of_thread(7, 7);
+			}
+			else {
+				libmapping_set_aff_of_thread(0, 0);
+				libmapping_set_aff_of_thread(1, 2);
+				libmapping_set_aff_of_thread(2, 1);
+				libmapping_set_aff_of_thread(3, 3);
+				libmapping_set_aff_of_thread(4, 4);
+				libmapping_set_aff_of_thread(5, 6);
+				libmapping_set_aff_of_thread(6, 5);
+				libmapping_set_aff_of_thread(7, 7);
+			}
+		#endif
 		#pragma omp parallel
 		{
 			int id;
@@ -100,7 +123,7 @@ int main(int argc, char **argv)
 					...
 				*/
 				p = r + (id / 2);
-
+				
 				if ((id % 2) == 0)
 					reader(p);
 				else
