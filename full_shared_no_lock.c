@@ -22,12 +22,7 @@ typedef struct resource_t {
 
 resource_t *r;
 
-#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
-	int it_reader = 0;
-	int it_writer = 0;
-#endif
-
-void reader(resource_t *p)
+void reader(resource_t *p, int id, int phase)
 {
 	int i, j, z = 0;
 	
@@ -39,7 +34,7 @@ void reader(resource_t *p)
 	for (i=0; i<nint; i++) {
 		while (p->hold != 1);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
-			libmapping_remap(REMAP_IT_READER, it_reader);
+			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
 			it_reader++;
 		#endif
 		for (j=0; j<vsize; j++) {
@@ -49,7 +44,7 @@ void reader(resource_t *p)
 	}
 }
 
-void writer(resource_t *p)
+void writer(resource_t *p, int id, int phase)
 {
 	int i, j;
 
@@ -61,7 +56,7 @@ void writer(resource_t *p)
 	for (i=0; i<nint; i++) {
 		while (p->hold != 0);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
-			libmapping_remap(REMAP_IT_WRITER, it_writer);
+			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
 			it_writer++;
 		#endif
 		for (j=0; j<vsize; j++) {
@@ -148,9 +143,9 @@ int main(int argc, char **argv)
 				p = r + (id / 2);
 				
 				if ((id % 2) == 0)
-					reader(p);
+					reader(p, id, i);
 				else
-					writer(p);
+					writer(p, id, i);
 			}
 			else {
 				/*
@@ -166,9 +161,9 @@ int main(int argc, char **argv)
 				p = r + (id % npairs);
 
 				if ((id / npairs) == 0)
-					reader(p);
+					reader(p, id, i);
 				else
-					writer(p);
+					writer(p, id, i);
 			}
 		}
 	}
