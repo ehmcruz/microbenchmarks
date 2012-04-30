@@ -35,7 +35,6 @@ void reader(resource_t *p, int id, int phase)
 		while (p->hold != 1);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
-			it_reader++;
 		#endif
 		for (j=0; j<vsize; j++) {
 			z += p->v[j];
@@ -57,7 +56,6 @@ void writer(resource_t *p, int id, int phase)
 		while (p->hold != 0);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
-			it_writer++;
 		#endif
 		for (j=0; j<vsize; j++) {
 			p->v[j] = i + j;
