@@ -11,6 +11,7 @@ typedef struct resource_t {
 	volatile int *v;
 	volatile int ready;
 	volatile int hold;
+	volatile char empty[128]; // force different cache lines to avoid false sharing
 } resource_t;
 
 resource_t *r;
@@ -18,7 +19,6 @@ resource_t *r;
 void reader(resource_t *p)
 {
 	int i, j, z = 0;
-	//resource_t *p = r + id/2;
 	
 	#pragma omp atomic
 	p->ready++;
@@ -37,7 +37,6 @@ void reader(resource_t *p)
 void writer(resource_t *p)
 {
 	int i, j;
-	//resource_t *p = r + id/2;
 
 	#pragma omp atomic
 	p->ready++;
@@ -56,8 +55,6 @@ void writer(resource_t *p)
 int main(int argc, char **argv)
 {
 	int i;
-	struct timeval timer_start, timer_end;
-	double timer_spent;
 		
 	if (argc != 5) {
 		printf("%s vsize nint nphases npairs\n", argv[0]);
@@ -71,11 +68,9 @@ int main(int argc, char **argv)
 	
 	omp_set_num_threads(npairs*2);
 	
-	libmapping_omp_automate();
-	
 	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
-	
+
 	for (i=0; i<npairs; i++) {
 		r[i].ready = 0;
 		r[i].v = calloc(vsize, sizeof(int));
@@ -83,28 +78,55 @@ int main(int argc, char **argv)
 		assert(r[i].v != NULL);
 	}
 
-	gettimeofday(&timer_start, NULL);
-		
-	#pragma omp parallel
-	{
-		int id;
-		resource_t *p;
-		
-		id = omp_get_thread_num();
-		p = r + id/2;
+	libmapping_omp_automate();
 	
-		if (id & 0x01)
-			reader(p);
-		else
-			writer(p);
+	for (i=0; i<nphases; i++) {
+		#pragma omp parallel
+		{
+			int id;
+			resource_t *p;
+		
+			id = omp_get_thread_num();
+			
+			if ((i % 2) == 0) {
+				/*
+					0,1 -> 0
+					2,3 -> 1
+					
+					0,1 -> 0
+					2,3 -> 1
+					4,5 -> 2
+					6,7 -> 3
+					...
+				*/
+				p = r + (id / 2);
+
+				if ((id % 2) == 0)
+					reader(p);
+				else
+					writer(p);
+			}
+			else {
+				/*
+					0,2 -> 0
+					1,3 -> 1
+				
+					0,4 -> 0
+					1,5 -> 1
+					2,6 -> 2
+					3,7 -> 3
+					...			
+				*/
+				p = r + (id % npairs);
+
+				if ((id / npairs) == 0)
+					reader(p);
+				else
+					writer(p);
+			}
+		}
 	}
 
-	gettimeofday(&timer_end, NULL);
-	
-	timer_spent = timer_end.tv_sec - timer_start.tv_sec + (timer_end.tv_usec - timer_start.tv_usec) / 1000000.0;
-
-	printf("Time spent: %.6fs\n", timer_spent);
-	
 	libmapping_omp_automate_finish();
 		
 	return 0;
