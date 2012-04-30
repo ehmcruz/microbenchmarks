@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "mapping-lib.h"
+#include "libmapping.h"
 
 int vsize, npairs, nint;
 
@@ -68,7 +68,9 @@ int main(int argc, char **argv)
 	nint = atoi(argv[2]);
 	npairs = atoi(argv[3]);
 	
-	mapping_lib_omp_automate(npairs*2);
+	omp_set_num_threads(npairs*2);
+	
+	libmapping_omp_automate();
 	
 	r = malloc(sizeof(resource_t) * npairs);
 	assert(r != NULL);
@@ -98,7 +100,7 @@ int main(int argc, char **argv)
 
 	printf("Time spent: %.6fs\n", timer_spent);
 	
-	mapping_lib_omp_automate_finish();
+	libmapping_omp_automate_finish();
 		
 	return 0;
 }
