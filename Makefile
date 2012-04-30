@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O2 -fopenmp $(MOREFLAGS)
+CFLAGS=-O2 -fopenmp #-DREMAP
 LDFLAGS=mapping-lib.o $(CFLAGS) #-lpapi
 MAPPINGLIBFLAGS=-DENABLE_OPENMP -I../libmapping #-DLIBMAPPING_WITH_PAPI
 
