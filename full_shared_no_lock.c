@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 	
 	for (i=0; i<nphases; i++) {
 		#ifdef REMAP
-			assert(npairs == 8);
+			assert(npairs == 4);
 			if ((i % 2) == 0) {
 				libmapping_set_aff_of_thread(0, 0);
 				libmapping_set_aff_of_thread(1, 4);
