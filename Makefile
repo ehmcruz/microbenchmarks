@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O2 -fopenmp #-DREMAP
 LDFLAGS=mapping-lib.o $(CFLAGS) #-lpapi
-MAPPINGLIBFLAGS=-DENABLE_OPENMP -I../libmapping #-DLIBMAPPING_WITH_PAPI
+MAPPINGLIBFLAGS=-DENABLE_OPENMP -I../libmapping -DLIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE #-DLIBMAPPING_WITH_PAPI
 
 all: mapping-lib.o full_shared_no_lock
 	$(CC) -o full_shared_no_lock full_shared_no_lock.o $(LDFLAGS)

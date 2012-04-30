@@ -5,6 +5,12 @@
 
 #include "libmapping.h"
 
+enum {
+	REMAP_PHASE = 0,
+	REMAP_IT_WRITER = 1,
+	REMAP_IT_READER = 2
+};
+
 int vsize, npairs, nint, nphases;
 
 typedef struct resource_t {
@@ -15,6 +21,11 @@ typedef struct resource_t {
 } resource_t;
 
 resource_t *r;
+
+#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
+	int it_reader = 0;
+	int it_writer = 0;
+#endif
 
 void reader(resource_t *p)
 {
@@ -27,6 +38,10 @@ void reader(resource_t *p)
 	
 	for (i=0; i<nint; i++) {
 		while (p->hold != 1);
+		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
+			libmapping_remap(REMAP_IT_READER, it_reader);
+			it_reader++;
+		#endif
 		for (j=0; j<vsize; j++) {
 			z += p->v[j];
 		}
@@ -45,6 +60,10 @@ void writer(resource_t *p)
 
 	for (i=0; i<nint; i++) {
 		while (p->hold != 0);
+		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
+			libmapping_remap(REMAP_IT_WRITER, it_writer);
+			it_writer++;
+		#endif
 		for (j=0; j<vsize; j++) {
 			p->v[j] = i + j;
 		}
@@ -81,6 +100,10 @@ int main(int argc, char **argv)
 	libmapping_omp_automate();
 	
 	for (i=0; i<nphases; i++) {
+		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
+			libmapping_remap(REMAP_PHASE, i);
+		#endif
+		
 		#ifdef REMAP
 			assert(npairs == 4);
 			if ((i % 2) == 0) {
