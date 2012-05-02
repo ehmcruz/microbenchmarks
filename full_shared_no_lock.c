@@ -3,7 +3,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "libmapping.h"
+#include <libmapping.h>
+
+#if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
+	#include <libremap.h>
+#endif
 
 enum {
 	REMAP_PHASE = 0,
@@ -56,6 +60,22 @@ void writer(resource_t *p, int id, int phase)
 		while (p->hold != 0);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
+		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
+			if (libmapping_remap_check_init() && id == 0) {
+				thread_mapping_t *tm;
+				uint32_t step;
+				
+				step = ((i + nint*phase) << 8) | id;
+		
+				tm = wrapper_get_comm_pattern(REMAP_IT_WRITER, step);
+				assert(tm != NULL);
+		
+				libmapping_remap_check_migrate(tm);
+			}
+		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
+			if (libmapping_remap_check_init() && id == 0) {
+				libmapping_remap_check_migrate();
+			}
 		#endif
 		for (j=0; j<vsize; j++) {
 			p->v[j] = i + j;
@@ -97,7 +117,7 @@ int main(int argc, char **argv)
 			libmapping_remap(REMAP_PHASE, i);
 		#endif
 		
-		#ifdef REMAP
+		#ifdef PERFECT_REMAP
 			assert(npairs == 4);
 			if ((i % 2) == 0) {
 				libmapping_set_aff_of_thread(0, 0);
