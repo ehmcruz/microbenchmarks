@@ -61,7 +61,7 @@ void writer(resource_t *p, int id, int phase)
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
 		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
-			if (libmapping_remap_check_init() && id == 0) {
+			if (id == 0) {
 				thread_mapping_t *tm;
 				uint32_t step;
 				
@@ -73,7 +73,7 @@ void writer(resource_t *p, int id, int phase)
 				libmapping_remap_check_migrate(tm);
 			}
 		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
-			if (libmapping_remap_check_init() && id == 0) {
+			if (id == 0) {
 				libmapping_remap_check_migrate();
 			}
 		#endif
@@ -111,6 +111,8 @@ int main(int argc, char **argv)
 	}
 
 	libmapping_omp_automate();
+	
+	while (!libmapping_remap_check_init());
 	
 	for (i=0; i<nphases; i++) {
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
