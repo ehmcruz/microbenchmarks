@@ -112,7 +112,9 @@ int main(int argc, char **argv)
 
 	libmapping_omp_automate();
 	
-	while (!libmapping_remap_check_init());
+	#if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
+		while (!libmapping_remap_check_init());
+	#endif
 	
 	for (i=0; i<nphases; i++) {
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
