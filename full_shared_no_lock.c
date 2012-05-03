@@ -9,6 +9,18 @@
 	#include <libremap.h>
 #endif
 
+#ifdef DEBUG
+	#undef DEBUG
+#endif
+
+#define DEBUG
+
+#ifdef DEBUG
+	#define DPRINTF(...) printf(__VA_ARGS__)
+#else
+	#define DPRINTF(...)
+#endif
+
 enum {
 	REMAP_PHASE = 0,
 	REMAP_IT_WRITER = 1,
@@ -39,6 +51,24 @@ void reader(resource_t *p, int id, int phase)
 		while (p->hold != 1);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
+		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
+			if (id == 0) {
+				thread_mapping_t *tm;
+				uint32_t step;
+				
+				DPRINTF("\tstep %i\n", i);
+				
+				step = ((i + nint*phase) << 8) | id;
+		
+				tm = wrapper_get_comm_pattern(REMAP_IT_READER, step);
+				assert(tm != NULL);
+		
+				libmapping_remap_check_migrate(tm);
+			}
+		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
+			if (id == 0) {
+				libmapping_remap_check_migrate();
+			}
 		#endif
 		for (j=0; j<vsize; j++) {
 			z += p->v[j];
@@ -60,22 +90,6 @@ void writer(resource_t *p, int id, int phase)
 		while (p->hold != 0);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
-		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
-			if (id == 0) {
-				thread_mapping_t *tm;
-				uint32_t step;
-				
-				step = ((i + nint*phase) << 8) | id;
-		
-				tm = wrapper_get_comm_pattern(REMAP_IT_WRITER, step);
-				assert(tm != NULL);
-		
-				libmapping_remap_check_migrate(tm);
-			}
-		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
-			if (id == 0) {
-				libmapping_remap_check_migrate();
-			}
 		#endif
 		for (j=0; j<vsize; j++) {
 			p->v[j] = i + j;
@@ -144,6 +158,7 @@ int main(int argc, char **argv)
 				libmapping_set_aff_of_thread(7, 7);
 			}
 		#endif
+		DPRINTF("phase %i\n", i);
 		#pragma omp parallel
 		{
 			int id;
