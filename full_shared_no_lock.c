@@ -13,7 +13,7 @@
 	#undef DEBUG
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 	#define DPRINTF(...) printf(__VA_ARGS__)
