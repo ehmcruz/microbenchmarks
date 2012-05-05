@@ -27,7 +27,11 @@ enum {
 	REMAP_IT_READER = 2
 };
 
-int vsize, npairs, nint, nphases;
+static int vsize, npairs, nint, nphases;
+
+#if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
+	static uint64_t stats[LIBMAPPING_REMAP_NUMTYPES];
+#endif
 
 typedef struct resource_t {
 	volatile int *v;
@@ -55,6 +59,7 @@ void reader(resource_t *p, int id, int phase)
 			if (id == 0) {
 				thread_mapping_t *tm;
 				uint32_t step;
+				int code;
 				
 				DPRINTF("\tstep %i\n", i);
 				
@@ -63,11 +68,14 @@ void reader(resource_t *p, int id, int phase)
 				tm = wrapper_get_comm_pattern(REMAP_IT_READER, step);
 				assert(tm != NULL);
 		
-				libmapping_remap_check_migrate(tm);
+				code = libmapping_remap_check_migrate(tm);
+				stats[code]++;
 			}
 		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
 			if (id == 0) {
-				libmapping_remap_check_migrate();
+				int code;
+				code = libmapping_remap_check_migrate();
+				stats[code]++;
 			}
 		#endif
 		for (j=0; j<vsize; j++) {
@@ -128,6 +136,10 @@ int main(int argc, char **argv)
 	
 	#if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
 		while (!libmapping_remap_check_init());
+		
+		for (i=0; i<LIBMAPPING_REMAP_NUMTYPES; i++) {
+			stats[i] = 0;
+		}
 	#endif
 	
 	for (i=0; i<nphases; i++) {
@@ -206,6 +218,13 @@ int main(int argc, char **argv)
 	}
 
 	libmapping_omp_automate_finish();
+
+	#if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)	
+		printf("libremap stats:\n");
+		for (i=0; i<LIBMAPPING_REMAP_NUMTYPES; i++) {
+			printf("\t%s: %llu\n", libmapping_remap_type_str(i), stats[i]);
+		}
+	#endif
 		
 	return 0;
 }
