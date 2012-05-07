@@ -65,7 +65,9 @@ void reader(resource_t *p, int id, int phase)
 		
 				tm = wrapper_get_comm_pattern(REMAP_IT_READER, step);
 				assert(tm != NULL);
-				
+
+				code = libmapping_remap_check_migrate(tm);
+								
 				#ifdef DEBUG
 					if (code == LIBMAPPING_REMAP_MIGRATED)
 						DPRINTF("\tstep %i MIGRATED\n", i);
@@ -73,7 +75,6 @@ void reader(resource_t *p, int id, int phase)
 						DPRINTF("\tstep %i\n", i);
 				#endif
 		
-				code = libmapping_remap_check_migrate(tm);
 				stats[code]++;
 			}
 		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
