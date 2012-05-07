@@ -60,13 +60,18 @@ void reader(resource_t *p, int id, int phase)
 				thread_mapping_t *tm;
 				uint32_t step;
 				int code;
-				
-				DPRINTF("\tstep %i\n", i);
-				
+						
 				step = ((i + nint*phase) << 8) | id;
 		
 				tm = wrapper_get_comm_pattern(REMAP_IT_READER, step);
 				assert(tm != NULL);
+				
+				#ifdef DEBUG
+					if (code == LIBMAPPING_REMAP_MIGRATED)
+						DPRINTF("\tstep %i MIGRATED\n", i);
+					else
+						DPRINTF("\tstep %i\n", i);
+				#endif
 		
 				code = libmapping_remap_check_migrate(tm);
 				stats[code]++;
