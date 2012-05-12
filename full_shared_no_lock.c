@@ -53,16 +53,16 @@ void reader(resource_t *p, int id, int phase)
 			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
 		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
 			if (id == 0) {
-				thread_mapping_t tm;
+				thread_mapping_t *tm;
 				uint32_t step;
-				int code, r;
+				int code;
 						
 				step = ((i + nint*phase) << 8) | id;
 		
-				r = wrapper_get_comm_pattern(REMAP_IT_READER, step, &tm);
-				assert(r);
+				tm = get_comm_pattern(REMAP_IT_READER, step);
+				assert(tm != NULL);
 
-				code = libmapping_remap_check_migrate(&tm);
+				code = libmapping_remap_check_migrate(tm);
 								
 				#ifdef DEBUG
 					if (code == LIBMAPPING_REMAP_MIGRATED)
