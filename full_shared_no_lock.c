@@ -67,8 +67,8 @@ void reader(resource_t *p, int id, int phase)
 				#ifdef DEBUG
 					if (code == LIBMAPPING_REMAP_MIGRATED)
 						DPRINTF("\tstep %i MIGRATED\n", i);
-					else
-						DPRINTF("\tstep %i\n", i);
+					//else
+					//	DPRINTF("\tstep %i\n", i);
 				#endif
 			}
 		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
