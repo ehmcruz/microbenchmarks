@@ -73,7 +73,14 @@ void reader(resource_t *p, int id, int phase)
 			}
 		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
 			if (id == 0) {
-				libmapping_remap_check_migrate();
+				int code;
+				code = libmapping_remap_check_migrate();
+				#ifdef DEBUG
+					if (code == LIBMAPPING_REMAP_MIGRATED)
+						DPRINTF("\tstep %i MIGRATED\n", i);
+					//else
+					//	DPRINTF("\tstep %i\n", i);
+				#endif
 			}
 		#endif
 		for (j=0; j<vsize; j++) {
