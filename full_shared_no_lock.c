@@ -141,13 +141,18 @@ int main(int argc, char **argv)
 	}
 
 	libmapping_omp_automate();
+	#ifdef PERFECT_REMAP
+		wrapper_load_hierarchy_from_env();
+	#endif
 		
 	for (i=0; i<nphases; i++) {
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_PHASE, i);
 		#endif
-		
-		#ifdef PERFECT_REMAP
+
+		DPRINTF("phase %i\n", i);		
+
+		#ifdef PERFECT_REMAP			
 			if ((i % 2) == 0) {
 				int j;
 				for (j=0; j<nthreads; j++) {
@@ -177,8 +182,19 @@ int main(int argc, char **argv)
 				libmapping_set_aff_of_thread(7, 7); j = 7
 				*/
 			}
+
+			#ifdef DEBUG
+			{
+				int j;
+				DPRINTF("perfect remap to \n");
+				for (j=0; j<nthreads; j++) {
+					DPRINTF("%i,", libmapping_get_aff_of_thread(j));
+				}
+				DPRINTF("\n");
+			}
+			#endif
 		#endif
-		DPRINTF("phase %i\n", i);
+
 		#pragma omp parallel
 		{
 			int id;
