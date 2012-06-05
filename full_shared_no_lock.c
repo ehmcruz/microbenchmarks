@@ -62,39 +62,41 @@ void reader(resource_t *p, int id, int phase)
 	
 	for (i=0; i<nint OTHERCOND; i++) {
 		while (p->hold != 1);
-		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
-			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
-		#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
-			if (id == 0) {
-				thread_mapping_t *tm;
-				uint32_t step;
-				int code;
+		#ifndef PERFECT_REMAP
+			#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
+				libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
+			#elif defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE)
+				if (id == 0) {
+					thread_mapping_t *tm;
+					uint32_t step;
+					int code;
 						
-				step = ((i + nint*phase) << 8) | id;
+					step = ((i + nint*phase) << 8) | id;
 		
-				tm = get_comm_pattern(REMAP_IT_READER, step);
-				assert(tm != NULL);
+					tm = get_comm_pattern(REMAP_IT_READER, step);
+					assert(tm != NULL);
 
-				code = libmapping_remap_check_migrate(tm);
+					code = libmapping_remap_check_migrate(tm);
 								
-				#ifdef DEBUG
-					if (code == LIBMAPPING_REMAP_MIGRATED)
-						DPRINTF("\tstep %i MIGRATED\n", i);
-					//else
-					//	DPRINTF("\tstep %i\n", i);
-				#endif
-			}
-		#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
-			if (id == 0) {
-				int code;
-				code = libmapping_remap_check_migrate();
-				#ifdef DEBUG
-					if (code == LIBMAPPING_REMAP_MIGRATED)
-						DPRINTF("\tstep %i MIGRATED\n", i);
-					//else
-					//	DPRINTF("\tstep %i\n", i);
-				#endif
-			}
+					#ifdef DEBUG
+						if (code == LIBMAPPING_REMAP_MIGRATED)
+							DPRINTF("\tstep %i MIGRATED\n", i);
+						//else
+						//	DPRINTF("\tstep %i\n", i);
+					#endif
+				}
+			#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
+				if (id == 0) {
+					int code;
+					code = libmapping_remap_check_migrate();
+					#ifdef DEBUG
+						if (code == LIBMAPPING_REMAP_MIGRATED)
+							DPRINTF("\tstep %i MIGRATED\n", i);
+						//else
+						//	DPRINTF("\tstep %i\n", i);
+					#endif
+				}
+			#endif
 		#endif
 		for (j=0; j<vsize; j++) {
 			z += p->v[j];
@@ -156,6 +158,10 @@ int main(int argc, char **argv)
 		r[i].hold = 0;
 		assert(r[i].v != NULL);
 	}
+	
+	#if defined(PERFECT_REMAP) && (defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS))
+		libmapping_set_allow_dynamic(0);
+	#endif
 
 	libmapping_omp_automate();
 	#ifdef PERFECT_REMAP
