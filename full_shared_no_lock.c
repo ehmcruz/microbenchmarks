@@ -7,6 +7,8 @@
 
 #if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
 	#include <libremap.h>
+#elif defined(PERFECT_REMAP)
+	#include <map_algorithm.h>
 #endif
 
 #ifdef DEBUG
@@ -27,7 +29,7 @@ enum {
 	REMAP_IT_READER = 2
 };
 
-static int vsize, npairs, nint, nphases;
+static int vsize, npairs, nint, nphases, nthreads;
 
 typedef struct resource_t {
 	volatile int *v;
@@ -124,8 +126,9 @@ int main(int argc, char **argv)
 	nint = atoi(argv[2]);
 	nphases = atoi(argv[3]);
 	npairs = atoi(argv[4]);
-	
-	omp_set_num_threads(npairs*2);
+
+	nthreads = npairs * 2;
+	omp_set_num_threads(nthreads);
 	
 	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
@@ -145,26 +148,34 @@ int main(int argc, char **argv)
 		#endif
 		
 		#ifdef PERFECT_REMAP
-			assert(npairs == 4);
 			if ((i % 2) == 0) {
-				libmapping_set_aff_of_thread(0, 0);
-				libmapping_set_aff_of_thread(1, 4);
-				libmapping_set_aff_of_thread(2, 2);
-				libmapping_set_aff_of_thread(3, 6);
-				libmapping_set_aff_of_thread(4, 1);
-				libmapping_set_aff_of_thread(5, 5);
-				libmapping_set_aff_of_thread(6, 3);
-				libmapping_set_aff_of_thread(7, 7);
+				int j;
+				for (j=0; j<nthreads; j++) {
+					libmapping_set_aff_of_thread(j, wrapper_get_coreid_from_hierarchy(j));
+				}
 			}
 			else {
-				libmapping_set_aff_of_thread(0, 0);
-				libmapping_set_aff_of_thread(1, 2);
-				libmapping_set_aff_of_thread(2, 1);
-				libmapping_set_aff_of_thread(3, 3);
-				libmapping_set_aff_of_thread(4, 4);
-				libmapping_set_aff_of_thread(5, 6);
-				libmapping_set_aff_of_thread(6, 5);
-				libmapping_set_aff_of_thread(7, 7);
+				int j, tid;
+				for (j=0; j<nthreads; j++) {
+					if ((j / 2) == 0)
+						tid = j / 2;
+					else
+						tid = (nthreads / 2) + (j / 2);
+					libmapping_set_aff_of_thread(tid, wrapper_get_coreid_from_hierarchy(j));
+				}
+				/*
+				libmapping_set_aff_of_thread(0, 0); j = 0
+				libmapping_set_aff_of_thread(4, 4); j = 1
+				
+				libmapping_set_aff_of_thread(1, 2); j = 2
+				libmapping_set_aff_of_thread(5, 6); j = 3
+				
+				libmapping_set_aff_of_thread(2, 1); j = 4
+				libmapping_set_aff_of_thread(6, 5); j = 5
+				
+				libmapping_set_aff_of_thread(3, 3); j = 6
+				libmapping_set_aff_of_thread(7, 7); j = 7
+				*/
 			}
 		#endif
 		DPRINTF("phase %i\n", i);
