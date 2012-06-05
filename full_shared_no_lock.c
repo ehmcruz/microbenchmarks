@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 			else {
 				int j, tid;
 				for (j=0; j<nthreads; j++) {
-					if ((j / 2) == 0)
+					if ((j % 2) == 0)
 						tid = j / 2;
 					else
 						tid = (nthreads / 2) + (j / 2);
