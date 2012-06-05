@@ -16,6 +16,7 @@
 #endif
 
 #define DEBUG
+#define KEEP_ALIVE
 
 #ifdef DEBUG
 	#define DPRINTF(...) printf(__VA_ARGS__)
@@ -31,6 +32,10 @@ enum {
 
 static int vsize, npairs, nint, nphases, nthreads;
 
+#ifdef KEEP_ALIVE
+	static volatile int completed;
+#endif
+
 typedef struct resource_t {
 	volatile int *v;
 	volatile int ready;
@@ -39,6 +44,12 @@ typedef struct resource_t {
 } resource_t;
 
 resource_t *r;
+
+#ifdef KEEP_ALIVE
+	#define OTHERCOND || completed < npairs
+#else
+	#define OTHERCOND
+#endif
 
 void reader(resource_t *p, int id, int phase)
 {
@@ -49,7 +60,7 @@ void reader(resource_t *p, int id, int phase)
 	
 	while (p->ready < 2);
 	
-	for (i=0; i<nint; i++) {
+	for (i=0; i<nint OTHERCOND; i++) {
 		while (p->hold != 1);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_READER, ((i + nint*phase) << 8) | id);
@@ -89,6 +100,12 @@ void reader(resource_t *p, int id, int phase)
 			z += p->v[j];
 		}
 		p->hold = 0;
+		#ifdef KEEP_ALIVE
+			if (i == (nint - 1)) {
+				#pragma omp atomic
+				completed++;
+			}
+		#endif
 	}
 }
 
@@ -101,7 +118,7 @@ void writer(resource_t *p, int id, int phase)
 	
 	while (p->ready < 2);
 
-	for (i=0; i<nint; i++) {
+	for (i=0; i<nint OTHERCOND; i++) {
 		while (p->hold != 0);
 		#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
@@ -115,7 +132,7 @@ void writer(resource_t *p, int id, int phase)
 
 int main(int argc, char **argv)
 {
-	int i;
+	int i, j;
 		
 	if (argc != 5) {
 		printf("%s vsize nint nphases npairs\n", argv[0]);
@@ -150,17 +167,21 @@ int main(int argc, char **argv)
 			libmapping_remap(REMAP_PHASE, i);
 		#endif
 
+		for (j=0; j<npairs; j++) {
+			r[j].ready = 0;
+			r[j].hold = 0;
+		}
+
 		DPRINTF("phase %i\n", i);		
 
 		#ifdef PERFECT_REMAP			
 			if ((i % 2) == 0) {
-				int j;
 				for (j=0; j<nthreads; j++) {
 					libmapping_set_aff_of_thread(j, wrapper_get_coreid_from_hierarchy(j));
 				}
 			}
 			else {
-				int j, tid;
+				int tid;
 				for (j=0; j<nthreads; j++) {
 					if ((j % 2) == 0)
 						tid = j / 2;
@@ -184,15 +205,16 @@ int main(int argc, char **argv)
 			}
 
 			#ifdef DEBUG
-			{
-				int j;
 				DPRINTF("perfect remap to \n");
 				for (j=0; j<nthreads; j++) {
 					DPRINTF("%i,", libmapping_get_aff_of_thread(j));
 				}
 				DPRINTF("\n");
-			}
 			#endif
+		#endif
+		
+		#ifdef KEEP_ALIVE
+			completed = 0;
 		#endif
 
 		#pragma omp parallel
