@@ -36,11 +36,20 @@ static int vsize, npairs, nint, nphases, nthreads;
 	static volatile int completed;
 #endif
 
+#ifndef CACHE_LINE_SIZE
+	#define CACHE_LINE_SIZE 64
+#endif
+
+typedef struct element_t {
+	int el;
+	char fill_line[ CACHE_LINE_SIZE - sizeof(int) ];
+} element_t;
+
 typedef struct resource_t {
-	volatile int *v;
+	volatile element_t *v;
 	volatile int ready;
 	volatile int hold;
-	volatile char empty[128]; // force different cache lines to avoid false sharing
+	volatile char empty[CACHE_LINE_SIZE*2]; // force different cache lines to avoid false sharing
 } resource_t;
 
 resource_t *r;
@@ -99,7 +108,7 @@ void reader(resource_t *p, int id, int phase)
 			#endif
 		#endif
 		for (j=0; j<vsize; j++) {
-			z += p->v[j];
+			z += p->v[j].el;
 		}
 		p->hold = 0;
 		#ifdef KEEP_ALIVE
@@ -126,7 +135,7 @@ void writer(resource_t *p, int id, int phase)
 			libmapping_remap(REMAP_IT_WRITER, ((i + nint*phase) << 8) | id);
 		#endif
 		for (j=0; j<vsize; j++) {
-			p->v[j] = i + j;
+			p->v[j].el = i + j;
 		}
 		p->hold = 1;
 	}
@@ -140,6 +149,8 @@ int main(int argc, char **argv)
 		printf("%s vsize nint nphases npairs\n", argv[0]);
 		exit(1);
 	}
+
+	assert(sizeof(element_t) == CACHE_LINE_SIZE);
 	
 	vsize = atoi(argv[1]);
 	nint = atoi(argv[2]);
@@ -154,10 +165,12 @@ int main(int argc, char **argv)
 
 	for (i=0; i<npairs; i++) {
 		r[i].ready = 0;
-		r[i].v = calloc(vsize, sizeof(int));
+		r[i].v = (element_t*)calloc(vsize, sizeof(element_t));
 		r[i].hold = 0;
 		assert(r[i].v != NULL);
 	}
+	
+	DPRINTF("%i kbytes vector (%i elements), %i iterations, %i phases, %i threads\n", (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
 	
 	#if defined(PERFECT_REMAP) && (defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS))
 		libmapping_set_allow_dynamic(0);
