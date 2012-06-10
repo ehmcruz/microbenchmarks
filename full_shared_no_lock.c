@@ -83,7 +83,10 @@ void reader(resource_t *p, int id, int phase)
 					step = ((i + nint*phase) << 8) | id;
 		
 					tm = get_comm_pattern(REMAP_IT_READER, step);
-					assert(tm != NULL);
+
+					if (i < nint && tm == NULL) {
+						assert(0);
+					}
 
 					code = libmapping_remap_check_migrate(tm);
 								
