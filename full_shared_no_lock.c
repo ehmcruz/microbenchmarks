@@ -84,18 +84,21 @@ void reader(resource_t *p, int id, int phase)
 		
 					tm = get_comm_pattern(REMAP_IT_READER, step);
 
-					if (i < nint && tm == NULL) {
-						assert(0);
+					if (tm == NULL) {
+						if (i < nint) {
+							assert(0);
+						}
 					}
-
-					code = libmapping_remap_check_migrate(tm);
+					else {
+						code = libmapping_remap_check_migrate(tm);
 								
-					#ifdef DEBUG
-						if (code == LIBMAPPING_REMAP_MIGRATED)
-							DPRINTF("\tstep %i MIGRATED\n", i);
-						//else
-						//	DPRINTF("\tstep %i\n", i);
-					#endif
+						#ifdef DEBUG
+							if (code == LIBMAPPING_REMAP_MIGRATED)
+								DPRINTF("\tstep %i MIGRATED\n", i);
+							//else
+							//	DPRINTF("\tstep %i\n", i);
+						#endif
+					}
 				}
 			#elif defined(LIBMAPPING_REAL_REMAP_SIMICS)
 				if (id == 0) {
