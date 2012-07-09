@@ -1,8 +1,10 @@
 CC=gcc
 CPP=g++
-CFLAGS=-O2 -fopenmp
-LDFLAGS=mapping-lib.o map_algorithm.o libremap.o $(CFLAGS) -lemon -lstdc++ #-lpapi
+CFLAGS=-O2
+LDFLAGS=mapping-lib.o map_algorithm.o libremap.o $(CFLAGS) -lemon -lstdc++ -lpthread #-lpapi
 
+MAPFLAGS=-DENABLE_OPENMP
+MAPFLAGS=-DENABLE_PTHREADS
 #MAPFLAGS=-DLIBMAPPING_WITH_PAPI
 #MAPFLAGS=-DLIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 #MAPFLAGS=-DLIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE
@@ -13,16 +15,16 @@ all: mapping-lib.o map_algorithm.o libremap.o full_shared_no_lock.o full_shared_
 	$(CC) -o full_shared_no_lock_perfect full_shared_no_lock_perfect.o $(LDFLAGS)
 
 full_shared_no_lock.o:
-	$(CC) -c full_shared_no_lock.c $(CFLAGS) -DENABLE_OPENMP -I../libmapping $(MAPFLAGS)
+	$(CC) -c full_shared_no_lock.c $(CFLAGS) -I../libmapping $(MAPFLAGS)
 
 full_shared_no_lock_perfect.o:
-	$(CC) -c full_shared_no_lock.c -o full_shared_no_lock_perfect.o $(CFLAGS) -DENABLE_OPENMP -I../libmapping -DPERFECT_REMAP $(MAPFLAGS)
+	$(CC) -c full_shared_no_lock.c -o full_shared_no_lock_perfect.o $(CFLAGS) -I../libmapping -DPERFECT_REMAP $(MAPFLAGS)
 
 mapping-lib.o:
-	$(CC) -c ../libmapping/libmapping.c -o mapping-lib.o $(CFLAGS) -DENABLE_OPENMP -I../libmapping $(MAPFLAGS)
+	$(CC) -c ../libmapping/libmapping.c -o mapping-lib.o $(CFLAGS) -I../libmapping $(MAPFLAGS)
 
 libremap.o:
-	$(CC) -o libremap.o -c ../libmapping/libremap.c $(CFLAGS) -DENABLE_OPENMP $(MAPFLAGS)
+	$(CC) -o libremap.o -c ../libmapping/libremap.c $(CFLAGS) $(MAPFLAGS)
 
 map_algorithm.o:
 	$(CPP) -o map_algorithm.o -c ../libmapping/map_algorithm.cpp $(CFLAGS) $(MAPFLAGS)
