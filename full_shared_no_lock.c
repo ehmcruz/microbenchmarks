@@ -9,7 +9,11 @@
 	#include <pthread.h>
 #endif
 
-#include <libmapping.h>
+//#include <libmapping.h>
+
+#if defined(PERFECT_REMAP)
+#undef PERFECT_REMAP
+#endif
 
 #if defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS)
 	#include <libremap.h>
@@ -419,12 +423,6 @@ int main(int argc, char **argv)
 		libmapping_set_allow_dynamic(0);
 	#endif
 
-	#ifdef BUSY_WAIT
-		libmapping_omp_automate();
-	#else
-		libmapping_pthreads_app_start(nthreads);
-	#endif
-	
 	#ifdef PERFECT_REMAP
 		wrapper_load_hierarchy_from_env();
 	#endif
@@ -445,12 +443,6 @@ int main(int argc, char **argv)
 		for (i=0; i<nthreads; i++) {
 			pthread_join(threads[i], NULL);
 		}
-	#endif
-
-	#ifdef BUSY_WAIT
-		libmapping_omp_automate_finish();
-	#else
-		libmapping_pthreads_app_end();
 	#endif
 		
 	return 0;
