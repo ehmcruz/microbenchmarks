@@ -417,7 +417,7 @@ int main(int argc, char **argv)
 		#endif
 	}
 
-	DPRINTF("%s %i kbytes vector (%ld elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
+	DPRINTF("%s %lu kbytes vector (%i elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
 
 	#if defined(PERFECT_REMAP) && (defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS))
 		libmapping_set_allow_dynamic(0);
