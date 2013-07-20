@@ -57,7 +57,7 @@ typedef struct element_t {
 
 typedef struct resource_t {
 	volatile element_t *v;
-	
+
 	#ifdef BUSY_WAIT
 		volatile int ready;
 		volatile int hold;
@@ -68,7 +68,7 @@ typedef struct resource_t {
 		pthread_cond_t cond_is_writing;
 		pthread_cond_t cond_is_reading;
 	#endif
-	
+
 	volatile char empty[CACHE_LINE_SIZE*2]; // force different cache lines to avoid false sharing
 } resource_t;
 
@@ -78,7 +78,7 @@ static resource_t *r;
 	static char version[] = "omp-busy-wait";
 #else
 	static char version[] = "pthreads-sleep";
-	
+
 	static pthread_mutex_t phase_mutex;
 	static pthread_cond_t phase_cond;
 #endif
@@ -134,14 +134,14 @@ static void writer_finished(resource_t *p)
 static void reader(resource_t *p, int id, int phase)
 {
 	int i, j, z = 0;
-	
+
 	#ifdef BUSY_WAIT
 		#pragma omp atomic
 		p->ready++;
-	
+
 		while (p->ready < 2);
 	#endif
-	
+
 	for (i=0; i<nint OTHERCOND; i++) {
 		reader_wait(p);
 		#ifndef PERFECT_REMAP
@@ -152,9 +152,9 @@ static void reader(resource_t *p, int id, int phase)
 					thread_mapping_t *tm;
 					uint32_t step;
 					int code;
-						
+
 					step = ((i + nint*phase) << 8) | id;
-		
+
 					tm = get_comm_pattern(REMAP_IT_READER, step);
 
 					if (tm == NULL) {
@@ -164,7 +164,7 @@ static void reader(resource_t *p, int id, int phase)
 					}
 					else {
 						code = libmapping_remap_check_migrate(tm);
-								
+
 						#ifdef DEBUG
 							if (code == LIBMAPPING_REMAP_MIGRATED)
 								DPRINTF("\tstep %i MIGRATED\n", i);
@@ -206,7 +206,7 @@ static void writer(resource_t *p, int id, int phase)
 	#ifdef BUSY_WAIT
 		#pragma omp atomic
 		p->ready++;
-	
+
 		while (p->ready < 2);
 	#endif
 
@@ -225,12 +225,12 @@ static void writer(resource_t *p, int id, int phase)
 static void run_phase(int i, int id)
 {
 	resource_t *p;
-	
+
 	if ((i % 2) == 0) {
 		/*
 			0,1 -> 0
 			2,3 -> 1
-			
+
 			0,1 -> 0
 			2,3 -> 1
 			4,5 -> 2
@@ -238,7 +238,7 @@ static void run_phase(int i, int id)
 			...
 		*/
 		p = r + (id / 2);
-		
+
 		if ((id % 2) == 0)
 			reader(p, id, i);
 		else
@@ -248,12 +248,12 @@ static void run_phase(int i, int id)
 		/*
 			0,2 -> 0
 			1,3 -> 1
-		
+
 			0,4 -> 0
 			1,5 -> 1
 			2,6 -> 2
 			3,7 -> 3
-			...			
+			...
 		*/
 		p = r + (id % npairs);
 
@@ -286,13 +286,13 @@ static void perfect_remap(int i)
 		/*
 		libmapping_set_aff_of_thread(0, 0); j = 0
 		libmapping_set_aff_of_thread(4, 4); j = 1
-		
+
 		libmapping_set_aff_of_thread(1, 2); j = 2
 		libmapping_set_aff_of_thread(5, 6); j = 3
-		
+
 		libmapping_set_aff_of_thread(2, 1); j = 4
 		libmapping_set_aff_of_thread(6, 5); j = 5
-		
+
 		libmapping_set_aff_of_thread(3, 3); j = 6
 		libmapping_set_aff_of_thread(7, 7); j = 7
 		*/
@@ -311,7 +311,7 @@ static void perfect_remap(int i)
 static void prepare_phase(int i)
 {
 	int j;
-	
+
 	#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 		libmapping_remap(REMAP_PHASE, i);
 	#endif
@@ -331,7 +331,7 @@ static void prepare_phase(int i)
 	#ifdef PERFECT_REMAP
 		perfect_remap(i);
 	#endif
-	
+
 	#ifdef KEEP_ALIVE
 		completed = 0;
 	#endif
@@ -343,9 +343,9 @@ static void* pthreads_callback(void *data)
 	int id = (int)data;
 	int i;
 	static volatile int nready = 0;
-	
+
 	libmapping_pthreads_thread_start(id);
-	
+
 	for (i=0; i<nphases; i++) {
 		pthread_mutex_lock(&phase_mutex);
 		nready++;
@@ -354,19 +354,19 @@ static void* pthreads_callback(void *data)
 		}
 		else {
 			int r;
-			
+
 			nready = 0; // for next phase
 			prepare_phase(i);
 			r = pthread_cond_broadcast(&phase_cond);
 			assert(!r);
 		}
 		pthread_mutex_unlock(&phase_mutex);
-		
+
 		run_phase(i, id);
 	}
-	
+
 	libmapping_pthreads_thread_end(id);
-	
+
 	return NULL;
 }
 #endif
@@ -377,14 +377,14 @@ int main(int argc, char **argv)
 	#ifndef BUSY_WAIT
 		pthread_t *threads;
 	#endif
-		
+
 	if (argc != 5) {
 		printf("%s vsize nint nphases npairs\n", argv[0]);
 		exit(1);
 	}
 
 	assert(sizeof(element_t) == CACHE_LINE_SIZE);
-	
+
 	vsize = atoi(argv[1]);
 	nint = atoi(argv[2]);
 	nphases = atoi(argv[3]);
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 		threads = (pthread_t*)calloc(nthreads, sizeof(pthread_t));
 		assert(threads != NULL);
 	#endif
-	
+
 	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
 
@@ -416,9 +416,9 @@ int main(int argc, char **argv)
 			pthread_cond_init (&r[i].cond_is_reading, NULL);
 		#endif
 	}
-	
-	DPRINTF("%s %i kbytes vector (%i elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
-	
+
+	DPRINTF("%s %i kbytes vector (%ld elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
+
 	#if defined(PERFECT_REMAP) && (defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS))
 		libmapping_set_allow_dynamic(0);
 	#endif
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
 	#ifdef PERFECT_REMAP
 		wrapper_load_hierarchy_from_env();
 	#endif
-	
+
 	#ifdef BUSY_WAIT
 		for (i=0; i<nphases; i++) {
 			prepare_phase(i);
@@ -444,6 +444,6 @@ int main(int argc, char **argv)
 			pthread_join(threads[i], NULL);
 		}
 	#endif
-		
+
 	return 0;
 }
