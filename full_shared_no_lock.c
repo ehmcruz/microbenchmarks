@@ -28,6 +28,8 @@
 #define DEBUG
 #define KEEP_ALIVE
 
+//#define REALLOC_DATA
+
 #ifdef DEBUG
 	#define DPRINTF(...) printf(__VA_ARGS__)
 #else
@@ -315,6 +317,13 @@ static void prepare_phase(int i)
 	#ifdef LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_SIMSIDE
 		libmapping_remap(REMAP_PHASE, i);
 	#endif
+
+#ifdef REALLOC_DATA
+	for (j=0; j<npairs; j++) {
+		r[j].v = (element_t*)calloc(vsize, sizeof(element_t));
+		assert(r[j].v != NULL);
+	}
+#endif
 
 	for (j=0; j<npairs; j++) {
 		#ifdef BUSY_WAIT
