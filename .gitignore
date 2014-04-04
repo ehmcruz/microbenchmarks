@@ -1,0 +1,3 @@
+*.o
+full_shared_no_lock
+full_shared_no_lock_perfect

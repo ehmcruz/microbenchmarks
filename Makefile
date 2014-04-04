@@ -21,6 +21,4 @@ full_shared_no_lock_perfect.o: full_shared_no_lock.c
 	$(CC) -c full_shared_no_lock.c -o full_shared_no_lock_perfect.o $(CFLAGS) -I../libmapping -DPERFECT_REMAP $(MAPFLAGS)
 
 clean:
-	- rm *.o
-	- rm full_shared_no_lock
-	- rm full_shared_no_lock_perfect
+	rm -f *.o full_shared_no_lock full_shared_no_lock_perfect
