@@ -10,7 +10,7 @@
 #endif
 
 #if defined(PERFECT_REMAP)
-	#include <libmapping.h>
+	#include <libmapping-interface.h>
 /*	#undef PERFECT_REMAP*/
 #endif
 
@@ -66,6 +66,10 @@ typedef struct resource_t {
 
 	volatile char empty[CACHE_LINE_SIZE*2]; // force different cache lines to avoid false sharing
 } resource_t;
+
+#if defined(PERFECT_REMAP)
+	static uint32_t *libmapping_thread_pos;
+#endif
 
 static resource_t *r;
 
@@ -266,7 +270,7 @@ static void perfect_remap(int i)
 
 	if ((i % 2) == 0) {
 		for (j=0; j<nthreads; j++) {
-			libmapping_set_aff_of_thread(j, wrapper_get_coreid_from_hierarchy(j));
+			libmapping_set_aff_thread_by_order_id(libmapping_thread_pos[j], libmapping_topology_get_best_pu_by_pos(j));
 		}
 	}
 	else {
@@ -276,7 +280,7 @@ static void perfect_remap(int i)
 				tid = j / 2;
 			else
 				tid = (nthreads / 2) + (j / 2);
-			libmapping_set_aff_of_thread(tid, wrapper_get_coreid_from_hierarchy(j));
+			libmapping_set_aff_thread_by_order_id(libmapping_thread_pos[tid], libmapping_topology_get_best_pu_by_pos(j));
 		}
 		/*
 		libmapping_set_aff_of_thread(0, 0); j = 0
@@ -293,10 +297,10 @@ static void perfect_remap(int i)
 		*/
 	}
 
-	#ifdef DEBUG
+	#if defined(DEBUG)
 		DPRINTF("perfect remap to \n");
 		for (j=0; j<nthreads; j++) {
-			DPRINTF("%i,", libmapping_get_aff_of_thread(j));
+			DPRINTF("%i,", libmapping_get_aff_thread_by_order_id(libmapping_thread_pos[j]));
 		}
 		DPRINTF("\n");
 	#endif
@@ -345,8 +349,8 @@ static void* pthreads_callback(void *data)
 	int id = (int)data;
 	int i;
 	static volatile int nready = 0;
-
-	libmapping_pthreads_thread_start(id);
+	
+	libmapping_thread_pos[id] = libmapping_get_current_thread_order_id();
 
 	for (i=0; i<nphases; i++) {
 		pthread_mutex_lock(&phase_mutex);
@@ -366,8 +370,6 @@ static void* pthreads_callback(void *data)
 
 		run_phase(i, id);
 	}
-
-	libmapping_pthreads_thread_end(id);
 
 	return NULL;
 }
@@ -406,6 +408,12 @@ int main(int argc, char **argv)
 	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
 
+#if defined(PERFECT_REMAP)
+	assert(nthreads < libmapping_topology_get_number_of_pus());
+	libmapping_thread_pos = (uint32_t*)calloc(nthreads, sizeof(uint32_t));
+	assert(libmapping_thread_pos != NULL);
+#endif
+
 	for (i=0; i<npairs; i++) {
 		r[i].v = (element_t*)calloc(vsize, sizeof(element_t));
 		assert(r[i].v != NULL);
@@ -421,12 +429,15 @@ int main(int argc, char **argv)
 
 	DPRINTF("%s %lu kbytes vector (%i elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
 
-/*	#if defined(PERFECT_REMAP) && (defined(LIBMAPPING_REMAP_SIMICS_COMM_PATTERN_REALMACHINESIDE) || defined(LIBMAPPING_REAL_REMAP_SIMICS))*/
-/*		libmapping_set_allow_dynamic(0);*/
-/*	#endif*/
-
-	#ifdef PERFECT_REMAP
-		wrapper_load_hierarchy_from_env();
+	#if defined(PERFECT_REMAP)
+		libmapping_set_dynamic_mode(0);
+		
+		#ifdef BUSY_WAIT
+			#pragma omp parallel
+			{
+				libmapping_thread_pos[ omp_get_thread_num() ] = libmapping_get_current_thread_order_id();
+			}
+		#endif
 	#endif
 
 	#ifdef BUSY_WAIT
