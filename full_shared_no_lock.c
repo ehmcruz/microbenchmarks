@@ -9,9 +9,13 @@
 	#include <pthread.h>
 #endif
 
-#if defined(PERFECT_REMAP)
+#if defined(PERFECT_REMAP) || defined(WITH_DATAMAPPING)
 	#include <libmapping-interface.h>
 /*	#undef PERFECT_REMAP*/
+#endif
+
+#if defined(WITH_DATAMAPPING)
+	#include <numa.h>
 #endif
 
 #ifdef DEBUG
@@ -72,6 +76,10 @@ typedef struct resource_t {
 #endif
 
 static resource_t *r;
+
+#if defined(WITH_DATAMAPPING)
+	static uint32_t *nodes_of_resources;
+#endif
 
 #ifdef BUSY_WAIT
 	static char version[] = "omp-busy-wait";
@@ -414,8 +422,28 @@ int main(int argc, char **argv)
 	assert(libmapping_thread_pos != NULL);
 #endif
 
+#if defined(WITH_DATAMAPPING)
+	printf("there are %u NUMA nodes\n", libmapping_topology_get_number_of_numa_nodes());
+	
+	nodes_of_resources = (uint32_t*)calloc(npairs, sizeof(uint32_t));
+	assert(nodes_of_resources != NULL);
+	
+	if (libmapping_env_to_vector("PCNODES", (int32_t*)nodes_of_resources, npairs, 0) != npairs) {
+		printf("env PCNODES must be a list of NUMA nodes, one element per pair of threads\n");
+		exit(1);
+	}
+	
 	for (i=0; i<npairs; i++) {
+		assert(nodes_of_resources[i] < libmapping_topology_get_number_of_numa_nodes());
+	}
+#endif
+
+	for (i=0; i<npairs; i++) {
+	#if defined(WITH_DATAMAPPING)
+		r[i].v = (element_t*)numa_alloc_onnode(vsize * sizeof(element_t), nodes_of_resources[i]);
+	#else
 		r[i].v = (element_t*)calloc(vsize, sizeof(element_t));
+	#endif
 		assert(r[i].v != NULL);
 		#ifdef BUSY_WAIT
 			r[i].ready = 0;
