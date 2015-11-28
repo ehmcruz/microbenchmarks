@@ -419,12 +419,14 @@ int main(int argc, char **argv)
 
 	r = calloc(npairs, sizeof(resource_t));
 	assert(r != NULL);
+	
+	printf("libmapping_topology_get_number_of_pus()=%i\n", libmapping_topology_get_number_of_pus());
 
-#if defined(PERFECT_REMAP)
-	assert(nthreads < libmapping_topology_get_number_of_pus());
+/*#if defined(PERFECT_REMAP)*/
+	assert(nthreads <= libmapping_topology_get_number_of_pus());
 	libmapping_thread_pos = (uint32_t*)calloc(nthreads, sizeof(uint32_t));
 	assert(libmapping_thread_pos != NULL);
-#endif
+/*#endif*/
 
 #if defined(WITH_DATAMAPPING)
 	printf("there are %u NUMA nodes\n", libmapping_topology_get_number_of_numa_nodes());
@@ -482,10 +484,12 @@ int main(int argc, char **argv)
 			}
 		}
 	#else
-		for (i=0; i<nthreads; i++) {
+		for (i=1; i<nthreads; i++) {
 			pthread_create(&threads[i], NULL, pthreads_callback, (void *)i);
 		}
-		for (i=0; i<nthreads; i++) {
+		pthreads_callback(0);
+		
+		for (i=1; i<nthreads; i++) {
 			pthread_join(threads[i], NULL);
 		}
 	#endif
