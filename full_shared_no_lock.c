@@ -9,10 +9,10 @@
 	#include <pthread.h>
 #endif
 
-#if defined(PERFECT_REMAP) || defined(WITH_DATAMAPPING)
+/*#if defined(PERFECT_REMAP) || defined(WITH_DATAMAPPING)*/
 	#include <libmapping-interface.h>
 /*	#undef PERFECT_REMAP*/
-#endif
+/*#endif*/
 
 #if defined(WITH_DATAMAPPING)
 	#include <numa.h>
@@ -32,6 +32,8 @@
 #else
 	#define DPRINTF(...)
 #endif
+
+#define CFG_PAGE_SIZE (16 * 1024)
 
 enum {
 	REMAP_PHASE = 0,
@@ -54,7 +56,7 @@ typedef struct element_t {
 	char fill_line[ CACHE_LINE_SIZE - sizeof(int) ];
 } element_t;
 
-typedef struct resource_t {
+struct resource_t {
 	volatile element_t *v;
 
 	#ifdef BUSY_WAIT
@@ -69,11 +71,13 @@ typedef struct resource_t {
 	#endif
 
 	volatile char empty[CACHE_LINE_SIZE*2]; // force different cache lines to avoid false sharing
-} resource_t;
+} __attribute__ ((aligned (CFG_PAGE_SIZE)));
 
-#if defined(PERFECT_REMAP)
+typedef struct resource_t resource_t;
+
+/*#if defined(PERFECT_REMAP)*/
 	static uint32_t *libmapping_thread_pos;
-#endif
+/*#endif*/
 
 static resource_t *r;
 
