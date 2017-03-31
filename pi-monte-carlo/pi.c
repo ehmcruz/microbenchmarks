@@ -5,6 +5,8 @@
 #include <omp.h>
 #include <sys/time.h>
 
+#define BASE 100000000
+
 typedef struct thread_data_t
 {
 	uint64_t nit;
@@ -35,8 +37,28 @@ int main (int argc, char **argv)
 	double pi, elapsed;
 	uint64_t total_it, total_count;
 	thread_data_t *t;
-	uint32_t nt, id, i;
+	uint32_t nt, id, i, types;
 	struct timeval timer_begin_app, timer_end_app;
+	uint64_t *its;
+	
+	if (argc > 1) {
+		types = argc - 1;
+		
+		its = (uint64_t*)malloc((types));
+		assert(its != NULL);
+	
+		for (i=1; i<argc; i++)
+			its[i-1] = strtoull(argv[i], NULL, 10);
+	}
+	else {
+		static uint64_t default_it[2] = { BASE, BASE/2 };
+		
+		types = 2;
+		its = default_it;
+	}
+	
+	for (i=0; i<types; i++)
+		printf("type %i = %llu\n", i, its[i]);
 	
 	#pragma omp parallel
 	{
@@ -50,7 +72,7 @@ int main (int argc, char **argv)
 		}
 		
 		id = omp_get_thread_num();
-		t[id].nit = 100000000;
+		t[id].nit = its[id % types];
 		t[id].count = pi_monte_carlo(t[id].nit, id);
 	}
 	
