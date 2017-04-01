@@ -60,7 +60,7 @@ int main (int argc, char **argv)
 	for (i=0; i<types; i++)
 		printf("type %i = %llu\n", i, its[i]);
 	
-	#pragma omp parallel
+	#pragma omp parallel private(id)
 	{
 		#pragma omp single
 		{
