@@ -44,7 +44,7 @@ int main (int argc, char **argv)
 	if (argc > 1) {
 		types = argc - 1;
 		
-		its = (uint64_t*)malloc((types));
+		its = (uint64_t*)malloc(types*sizeof(uint64_t));
 		assert(its != NULL);
 	
 		for (i=1; i<argc; i++)
