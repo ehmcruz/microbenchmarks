@@ -32,6 +32,31 @@ uint64_t pi_monte_carlo (uint64_t nit, uint32_t tid)
 	return count;
 }
 
+static void calc_imbalance (uint32_t nt, thread_data_t *t)
+{
+	uint64_t sum, max, min;
+	uint32_t i;
+	double avg;
+	
+	sum = t[0].nit;
+	max = t[0].nit;
+	min = t[0].nit;
+
+	for (i=1; i<nt; i++) {
+		sum += t[i].nit;
+		
+		if (t[i].nit > max)
+			max = t[i].nit;
+		if (t[i].nit < min)
+			min = t[i].nit;
+	}
+
+	avg = (double)sum / (double)nt;
+	
+	printf("imbalance-avg: %.3f%%\n", 100.0 * ((double)max - avg)/(double)max);
+	printf("imbalance-min: %.3f%%\n", 100.0 * ((double)max - (double)min)/(double)max);
+}
+
 int main (int argc, char **argv)
 {
 	double pi, elapsed;
@@ -90,6 +115,7 @@ int main (int argc, char **argv)
 	
 	pi = 4.0 * (double)total_count/(double)total_it;
 	
+	calc_imbalance(nt, t);
 	printf("pi: %f\nExecution time: %.3f seconds\n", pi, elapsed);
 	
 	return 0;
