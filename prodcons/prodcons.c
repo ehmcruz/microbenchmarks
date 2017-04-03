@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <sys/time.h>
 
 #if defined(_OPENMP)
 	#include <omp.h>
@@ -265,6 +266,8 @@ static void* pthreads_callback(void *data)
 int main(int argc, char **argv)
 {
 	int i;
+	struct timeval timer_begin_app, timer_end_app;
+	double elapsed;
 	#ifndef BUSY_WAIT
 		pthread_t *threads;
 	#endif
@@ -310,26 +313,34 @@ int main(int argc, char **argv)
 	}
 
 	DPRINTF("%s %lu kbytes vector (%i elements), %i iterations, %i phases, %i threads\n", version, (vsize * sizeof(element_t)) / 1024, vsize, nint, nphases, nthreads);
+	
+	gettimeofday(&timer_begin_app, NULL);
 
-	#ifdef BUSY_WAIT
-		for (i=0; i<nphases; i++) {
-			prepare_phase(i);
+#ifdef BUSY_WAIT
+	for (i=0; i<nphases; i++) {
+		prepare_phase(i);
 
-			#pragma omp parallel
-			{
-				run_phase(i, omp_get_thread_num());
-			}
+		#pragma omp parallel
+		{
+			run_phase(i, omp_get_thread_num());
 		}
-	#else
-		for (i=1; i<nthreads; i++) {
-			pthread_create(&threads[i], NULL, pthreads_callback, (void *)i);
-		}
-		pthreads_callback(0);
-		
-		for (i=1; i<nthreads; i++) {
-			pthread_join(threads[i], NULL);
-		}
-	#endif
+	}
+#else
+	for (i=1; i<nthreads; i++) {
+		pthread_create(&threads[i], NULL, pthreads_callback, (void *)i);
+	}
+	pthreads_callback(0);
+	
+	for (i=1; i<nthreads; i++) {
+		pthread_join(threads[i], NULL);
+	}
+#endif
+
+	gettimeofday(&timer_end_app, NULL);
+	
+	elapsed = timer_end_app.tv_sec - timer_begin_app.tv_sec + (timer_end_app.tv_usec - timer_begin_app.tv_usec) / 1000000.0;
+	
+	printf("Execution time: %.3f seconds\n", elapsed);
 
 	return 0;
 }
