@@ -1,17 +1,13 @@
 CC=gcc
-CPP=g++
-CFLAGS=-O2 -ggdb
+CFLAGS=-O2 -g
 
-#CFLAGS += -fopenmp
-#LDFLAGS += -lpthread
-
-all: prodcons-omp prodcons-pthread
+all: prodcons-omp prodcons-pthreads
 
 prodcons-omp: prodcons.c
-	$(CC) -o prodcons-omp prodcons.c $(CFLAGS) -fopenmp
+	$(CC) -o $@ $< $(CFLAGS) -fopenmp
 
-prodcons-pthread: prodcons.c
-	$(CC) -o prodcons-pthread prodcons.c $(CFLAGS) -lpthread
+prodcons-pthreads: prodcons.c
+	$(CC) -o $@ $< $(CFLAGS) -pthread
 
 clean:
-	rm -f *.o prodcons-omp prodcons-pthread
+	rm -f *.o prodcons-omp prodcons-pthreads
