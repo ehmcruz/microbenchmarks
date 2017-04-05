@@ -2,7 +2,7 @@
 
 set -o errexit -o nounset
 
-nit="1000"
+nit="10000"
 
 nntimes="5"
 
@@ -17,12 +17,12 @@ do
 	folder="results/stats-nsize.$nsize-nit.$nit"
 	mkdir -p $folder
 
-	for core in `seq 0 1 $lastcore`
+	for core in `seq 1 $lastcore`
 	do
 		echo "core $core"
 		export GOMP_CPU_AFFINITY=0,$core
 
-		for i in `seq 0 1 $nntimes`
+		for i in `seq 0 $nntimes`
 		do
 			echo "core $core"
 			fname="$folder/prodcons-nsize.$nsize-nit.$nit-core.0.$core-$i.txt"
