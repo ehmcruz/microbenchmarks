@@ -92,7 +92,7 @@ int main (int argc, char **argv)
 			t = malloc(nt*sizeof(thread_data_t));
 			assert(t != NULL);
 			
-			ac = 0;
+			ac = 1;
 			
 			for (i=0; i<nt; i++) {
 				t[i].ini = ac;
@@ -105,25 +105,19 @@ int main (int argc, char **argv)
 		}
 		
 		id = omp_get_thread_num();
-		t[id].v = pi_monte_carlo(t[id].ini, t[id].end);
+		t[id].v = calc_harmonic(t[id].ini, t[id].end);
 	}
 	
 	gettimeofday(&timer_end_app, NULL);
 	
 	elapsed = timer_end_app.tv_sec - timer_begin_app.tv_sec + (timer_end_app.tv_usec - timer_begin_app.tv_usec) / 1000000.0;
 	
-	total_count = 0;
-	total_it = 0;
-	
-	for (i=0; i<nt; i++) {
-		total_count += t[i].count;
-		total_it += t[i].nit;
-	}
-	
-	pi = 4.0 * (double)total_count/(double)total_it;
+	harmonic = 0.0;
+	for (i=0; i<nt; i++)
+		harmonic += t[i].v;
 	
 	calc_imbalance(nt, t);
-	printf("pi: %f\nExecution time: %.3f seconds\n", pi, elapsed);
+	printf("harmonic: %f\nExecution time: %.3f seconds\n", harmonic, elapsed);
 	
 	return 0;
 }
