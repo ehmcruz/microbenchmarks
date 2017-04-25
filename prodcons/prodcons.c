@@ -80,10 +80,14 @@ static resource_t *r;
 	#define OTHERCOND
 #endif
 
+#define CPU_PAUSE __asm__ __volatile__ ("pause");
+
 static void reader_wait(resource_t *p)
 {
 	#ifdef BUSY_WAIT
-		while (p->hold != 1);
+		while (p->hold != 1) {
+			CPU_PAUSE
+		}
 	#else
 		pthread_mutex_lock(&p->mutex);
 		if (p->is_writing) {
@@ -105,7 +109,9 @@ static void reader_finished(resource_t *p)
 static void writer_wait(resource_t *p)
 {
 	#ifdef BUSY_WAIT
-		while (p->hold != 0);
+		while (p->hold != 0) {
+			CPU_PAUSE
+		}
 	#else
 	#endif
 }
