@@ -193,11 +193,29 @@ static void* pthreads_callback (void *data)
 
 int main (int argc, char **argv)
 {
-	if (argc == 3) {
-		nt = atoi(argv[1]);
+	pthread_t *ts;
+	char affinity[16];
+	if(getenv("GOMP_CPU_AFFINITY"))
+		strcpy(affinity,getenv("GOMP_CPU_AFFINITY"));
+	else if(getenv("KMP_AFFINITY"))
+		strcpy(affinity,getenv("KMP_AFFINITY"));
+	else
+		strcpy(affinity,"null");
+	if(getenv("OMP_NUM_THREADS"))
+		nt = atoi(getenv("OMP_NUM_THREADS"));
+	if (nt == 0)
+		nt = 1;
+
+	ts = malloc(sizeof(pthread_t)*nt);	
+	
+	if (argc == 2) {
 		parse_type_vector(argv[2]);	
 	}
 	else
 		fprintf(stderr, "parametros errados\n"); //placeholder
+	for(int i=0; i<nt; i++)
+		pthread_create(ts[i], NULL, pthreads_callback, &threads[i]);
 
+	for(int i=0; i<nt; i++)
+		pthread_join(ts[i], NULL);
 }
