@@ -66,8 +66,8 @@ static void parse_type_vector (char *str)
 	uint32_t i;
 	workload_t *vec;
 	
-	p = str
-	n = 1;
+	p = str;
+	int n = 1;
 	for (p=str; *p; p++)
 		n += (*p == ',');
 	
@@ -144,11 +144,12 @@ static void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buf
 	t->list[nels-1].next = t->list;
 	
 	// initialize the list
-	
+	int	i=1; //só pra compilar	
 	el = t->list;
 	do {
 		el->v = i;
 		el = el->next;
+		i++; //só pra compilar
 	} while (el != t->list);
 }
 
@@ -157,6 +158,7 @@ static void workload_pointer_chasing (thread_data_t *t)
 	uint64_t i, count;
 	uint32_t j;
 
+	list_el_t *el = t->list;
 	count = 0;
 	
 	for (i=0; alive; i+=STEP) {
@@ -184,12 +186,18 @@ static void* pthreads_callback (void *data)
 		break;
 		
 		default:
-			printf("wrong type %i\n", type);
+			printf("wrong type %i\n", t->type);
 			exit(1);
 	}
 }
 
 int main (int argc, char **argv)
 {
+	if (argc == 3) {
+		nt = atoi(argv[1]);
+		parse_type_vector(argv[2]);	
+	}
+	else
+		fprintf(stderr, "parametros errados\n"); //placeholder
 
 }
