@@ -99,7 +99,6 @@ static void parse_type_vector (char *str)
 	
 	for (i=0; i<nt; i++)
 		threads[i].type = vec[i % n];
-	
 	free(vec);
 }
 
@@ -207,14 +206,14 @@ int main (int argc, char **argv)
 		nt = 1;
 
 	ts = malloc(sizeof(pthread_t)*nt);	
-	
+	threads = malloc(sizeof(thread_data_t)*nt);	
 	if (argc == 2) {
-		parse_type_vector(argv[2]);	
+		parse_type_vector(argv[1]);	
 	}
 	else
 		fprintf(stderr, "parametros errados\n"); //placeholder
 	for(int i=0; i<nt; i++)
-		pthread_create(ts[i], NULL, pthreads_callback, &threads[i]);
+		pthread_create(&ts[i], NULL, pthreads_callback, &threads[i]);
 
 	for(int i=0; i<nt; i++)
 		pthread_join(ts[i], NULL);
