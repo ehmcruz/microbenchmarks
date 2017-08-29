@@ -207,7 +207,7 @@ static void parse_type_vector (char *str)
 	free(vec);
 }
 
-static void workload_harmonic (thread_data_t *t)
+void workload_harmonic (thread_data_t *t)
 {
 	uint64_t i;
 	uint32_t j;
@@ -257,7 +257,7 @@ static void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buf
 	} while (el != t->list);
 }
 
-static void workload_pointer_chasing (thread_data_t *t)
+void workload_pointer_chasing (thread_data_t *t)
 {
 	uint64_t i, count;
 	uint32_t j;
@@ -310,37 +310,44 @@ static void* time_monitor ()
 int main (int argc, char **argv)
 {
 	pthread_t *ts;
+	uint64_t total_loops;
+	int i;
 
 	if(getenv("OMP_NUM_THREADS"))
 		nt = atoi(getenv("OMP_NUM_THREADS"));
-	else
-		goto ERRO;
+	else {
+		printf("missing OMP_NUM_THREADS\n");
+		exit(1);
+	}
 	if (nt == 0)
 		nt = 1;
 
-	ts = malloc(sizeof(pthread_t)*(nt+1));	
-	threads = malloc(sizeof(thread_data_t)*nt);	
+	printf("Threads: %d\n", nt);
+	
+	ts = malloc(sizeof(pthread_t)*(nt+1));
+	assert(ts != NULL);
+	
+	threads = malloc(sizeof(thread_data_t)*nt);
+	assert(threads != NULL);
+	
 	if (argc == 3) {
 		parse_type_vector(argv[1]);	
 		assert(getenv("GOMP_CPU_AFFINITY"));
 		parse_affinity(getenv("GOMP_CPU_AFFINITY"));
 		walltime=atoi(argv[2]);	
 	}
-	else
-	{	
-	ERRO:
-		fprintf(stderr, "parametros errados\n"); //placeholder
+	else {	
+		printf("usage: %s <type_vector h|p> <time>\n", argv[0]); //placeholder
 		exit(-1);
 	}
-	
-	printf("Threads: %d\n", nt);
 
 	for(int i=0; i<nt; i++)
 	{
 		if(threads[i].type == WORKLOAD_POINTER_CHASING)
-			
+			workload_pointer_chasing_init_buffer(threads+i, 1024);
 		printf("%s (%d), ", workload_str_table[threads[i].type], threads[i].cpu);
 	}
+	printf("\n");
 
 	for(int i=0; i<nt; i++)
 		pthread_create(&ts[i], NULL, pthreads_callback, &threads[i]);
@@ -353,4 +360,12 @@ int main (int argc, char **argv)
 	pthread_join(ts[nt], NULL);
 		
 	printf("total time: %.3f\n", total_time/1000000);
+	
+	total_loops = 0;
+	for (i=0; i<nt; i++) {
+		total_loops += threads[i].nloops;
+	}
+	printf("Total loops: %llu\n", total_loops);
+	
+	return 0;
 }
