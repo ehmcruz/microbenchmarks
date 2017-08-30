@@ -31,9 +31,6 @@ static const char *workload_str_table[] = {
 	"V"
 };
 
-static volatile int alive = 1;
-static int walltime;
-double total_time;
 struct list_el_t {
     struct list_el_t *next;
     uint64_t v;
@@ -55,7 +52,4 @@ struct thread_data_t {
 }  __attribute__ ((aligned (CACHE_LINE_SIZE)));
 
 typedef struct thread_data_t thread_data_t;
-
-thread_data_t *threads;
-uint32_t nt;
 

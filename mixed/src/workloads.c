@@ -1,4 +1,4 @@
-#include "mixed.h"
+#include "../headers/workloads.h"
 void workload_harmonic (thread_data_t *t) 
 { 
     uint64_t i; 
@@ -19,7 +19,7 @@ void workload_harmonic (thread_data_t *t)
     t->nloops = i; 
 } 
 
-static void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buffer_size)
+void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buffer_size)
 {
     uint32_t j, nels;
     list_el_t *el;

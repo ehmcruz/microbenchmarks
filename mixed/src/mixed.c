@@ -1,5 +1,9 @@
-#include "workloads.c"
-
+#include "../headers/workloads.h"
+thread_data_t *threads;
+uint32_t nt;
+volatile int alive = 1;
+static int walltime;
+double total_time;
 
 double GetTime(void)
 {
