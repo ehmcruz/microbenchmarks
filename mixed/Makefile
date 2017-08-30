@@ -9,7 +9,7 @@ LDFLAGS += -lpthread
 all: mixed
 	@echo "Compiled! Yes!"
 
-mixed: mixed.c
+mixed: mixed.c workloads.c mixed.h
 	$(CC) -o mixed mixed.c $(CFLAGS) $(LDFLAGS)
 
 clean:

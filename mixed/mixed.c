@@ -1,59 +1,5 @@
-#ifndef _GNU_SOURCE
-    #define _GNU_SOURCE
-#endif
+#include "workloads.c"
 
-#include <sched.h>
-#include <errno.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <sys/time.h>
-#include <pthread.h>
-
-#define STEP 128
-#define CACHE_LINE_SIZE 128
-
-typedef enum workload_t {
-	WORKLOAD_HARMONIC,
-	WORKLOAD_POINTER_CHASING,
-	WORKLOAD_NTYPES
-} workload_t;
-
-static const char *workload_str_table[] = {
-	"H",
-	"P"
-};
-
-static volatile int alive = 1;
-static int walltime;
-double total_time;
-struct list_el_t {
-	struct list_el_t *next;
-	uint64_t v;
-} __attribute__ ((aligned (CACHE_LINE_SIZE)));
-
-typedef struct list_el_t list_el_t;
-
-struct thread_data_t {
-	int id;
-	workload_t type;
-	uint64_t nloops;
-	pid_t tid;	
-	int cpu;
-
-	double v;
-	uint64_t v2;
-	list_el_t *list;
-}  __attribute__ ((aligned (CACHE_LINE_SIZE)));
-
-typedef struct thread_data_t thread_data_t;
-
-thread_data_t *threads;
-uint32_t nt;
 
 double GetTime(void)
 {
@@ -190,6 +136,8 @@ static void parse_type_vector (char *str)
 			vec[i] = WORKLOAD_HARMONIC;
 		else if (!strcmp(tok, "p"))
 			vec[i] = WORKLOAD_POINTER_CHASING;
+		else if (!strcmp(tok, "v"))
+			vec[i] = WORKLOAD_VSUM;
 		else {
 			printf("unknown workload type %s\n", tok);
 			exit(1);
@@ -207,74 +155,6 @@ static void parse_type_vector (char *str)
 	free(vec);
 }
 
-void workload_harmonic (thread_data_t *t)
-{
-	uint64_t i;
-	uint32_t j;
-	double v;
-
-	v = 0.0;
-	i = 0;
-	
-	while (alive) {
-		for (j=0; j<STEP; j++) {
-			v += 1.0 / (double)i;
-			i++;
-		}
-	}
-
-	t-> v = v;
-	t->nloops = i;
-}
-
-static void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buffer_size)
-{
-	uint32_t j, nels;
-	list_el_t *el;
-	
-	nels = buffer_size / sizeof(list_el_t);
-	
-	if (!nels)
-		nels = 1;
-	
-	t->list = NULL;
-	assert(posix_memalign(&t->list, CACHE_LINE_SIZE, nels*sizeof(list_el_t)) == 0);
-	assert(t->list != NULL);
-	
-	// create circular list
-	
-	for (j=0; j<nels-1; j++)
-		t->list[j].next = t->list + j + 1;
-	t->list[nels-1].next = t->list;
-	
-	// initialize the list
-	int	i=1; //só pra compilar	
-	el = t->list;
-	do {
-		el->v = i;
-		el = el->next;
-		i++; //só pra compilar
-	} while (el != t->list);
-}
-
-void workload_pointer_chasing (thread_data_t *t)
-{
-	uint64_t i, count;
-	uint32_t j;
-
-	list_el_t *el = t->list;
-	count = 0;
-	
-	for (i=0; alive; i+=STEP) {
-		for (j=0; j<STEP; j++) {
-			count += el->v;
-			el = el->next;
-		}
-	}
-
-	t->v2 = count;
-	t->nloops = i;
-}
 
 static void* pthreads_callback (void *data)
 {
@@ -284,12 +164,14 @@ static void* pthreads_callback (void *data)
 	switch (t->type) {
 		case WORKLOAD_HARMONIC:
 			workload_harmonic(t);
-		break;
+			break;
 		
 		case WORKLOAD_POINTER_CHASING:
 			workload_pointer_chasing(t);
-		break;
-		
+			break;
+		case WORKLOAD_VSUM:
+			workload_vsum(t);	
+			break;
 		default:
 			printf("wrong type %i\n", t->type);
 			exit(1);
@@ -345,6 +227,8 @@ int main (int argc, char **argv)
 	{
 		if(threads[i].type == WORKLOAD_POINTER_CHASING)
 			workload_pointer_chasing_init_buffer(threads+i, 1024);
+		else if(threads[i].type == WORKLOAD_VSUM)
+			workload_vsum_init_buffer(&threads[i]);
 		printf("%s (%d), ", workload_str_table[threads[i].type], threads[i].cpu);
 	}
 	printf("\n");
