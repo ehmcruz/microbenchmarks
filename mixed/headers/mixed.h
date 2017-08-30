@@ -18,7 +18,7 @@
 
 #define STEP 128
 #define CACHE_LINE_SIZE 128
-
+#define N_WORKLOADS 3
 typedef enum workload_t {
     WORKLOAD_HARMONIC,
     WORKLOAD_POINTER_CHASING,

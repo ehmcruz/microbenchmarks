@@ -202,7 +202,7 @@ static void* time_monitor ()
 int main (int argc, char **argv)
 {
 	pthread_t *ts;
-	uint64_t total_loops;
+	uint64_t total_loops[N_WORKLOADS] = {};
 	int i;
 
 	if(getenv("OMP_NUM_THREADS"))
@@ -255,11 +255,11 @@ int main (int argc, char **argv)
 		
 	printf("total time: %.3f\n", total_time/1000000);
 	
-	total_loops = 0;
 	for (i=0; i<nt; i++) {
-		total_loops += threads[i].nloops;
+		total_loops[threads[i].type] += threads[i].nloops;
 	}
-	printf("Total loops: %llu\n", total_loops);
+	for (i=0; i<N_WORKLOADS; i++)
+	printf("Total loops %s: %llu\n", workload_str_table[i], total_loops[i]);
 	
 	return 0;
 }
