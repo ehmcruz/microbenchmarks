@@ -1,7 +1,8 @@
 #ifndef _GNU_SOURCE
     #define _GNU_SOURCE
 #endif
-
+#ifndef _microbenchmark_mixed_h
+	#define _microbenchmark_mixed_h
 #include <sched.h>
 #include <errno.h>
 #include <unistd.h>
@@ -25,11 +26,6 @@ typedef enum workload_t {
     WORKLOAD_NTYPES
 } workload_t;
 
-static const char *workload_str_table[] = {
-    "H",
-    "P",
-	"V"
-};
 
 struct list_el_t {
     struct list_el_t *next;
@@ -52,4 +48,4 @@ struct thread_data_t {
 }  __attribute__ ((aligned (CACHE_LINE_SIZE)));
 
 typedef struct thread_data_t thread_data_t;
-
+#endif

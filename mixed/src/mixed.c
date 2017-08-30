@@ -5,6 +5,12 @@ volatile int alive = 1;
 static int walltime;
 double total_time;
 
+static const char *workload_str_table[] = { 
+    "H", 
+    "P", 
+    "V" 
+};
+
 double GetTime(void)
 {
    struct  timeval time;
