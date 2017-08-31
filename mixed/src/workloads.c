@@ -1,6 +1,7 @@
 #include "../headers/workloads.h"
+
 void workload_harmonic (thread_data_t *t) 
-{ 
+{
     uint64_t i; 
     uint32_t j; 
     double v; 
@@ -17,7 +18,7 @@ void workload_harmonic (thread_data_t *t)
  
     t-> v = v; 
     t->nloops = i; 
-} 
+}
 
 void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buffer_size)
 {
@@ -91,13 +92,33 @@ void workload_vsum (thread_data_t *t)
     uint32_t j;
 
     count = 0;
-	for (i=0; alive; i+=STEP)
+	for (i=0; alive; i+=STEP) {
     	for (j=0; j<STEP; j++) {
-        	count += t->buffer[j];
+			count += t->buffer[j];
     	}
-	
+	}
 	
 	t->nloops = i;
+	t->v2 = count;
+}
 
+void workload_fibonacci_it (thread_data_t *t) 
+{
+	uint64_t prev, fib, tmp, i;
+	uint32_t j;
+
+	prev = 0;
+	fib = 1;
+
+	for (i=0; alive; i+=STEP) {
+		for (j=0; j<STEP; j++) {
+			tmp = fib;
+			fib += prev;
+			prev = tmp;
+		}
+	}
+	
+	t->nloops = i;
+	t->v2 = fib;
 }
 

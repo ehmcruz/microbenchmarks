@@ -1,4 +1,5 @@
 #include "../headers/workloads.h"
+
 thread_data_t *threads;
 uint32_t nt;
 volatile int alive = 1;
@@ -8,7 +9,8 @@ double total_time;
 static const char *workload_str_table[] = { 
     "H", 
     "P", 
-    "V" 
+    "V",
+    "F"
 };
 
 double GetTime(void)
@@ -148,6 +150,8 @@ static void parse_type_vector (char *str)
 			vec[i] = WORKLOAD_POINTER_CHASING;
 		else if (!strcmp(tok, "v"))
 			vec[i] = WORKLOAD_VSUM;
+		else if (!strcmp(tok, "f"))
+			vec[i] = WORKLOAD_FIBONACCI_IT;
 		else {
 			printf("unknown workload type %s\n", tok);
 			exit(1);
@@ -179,9 +183,15 @@ static void* pthreads_callback (void *data)
 		case WORKLOAD_POINTER_CHASING:
 			workload_pointer_chasing(t);
 			break;
+			
 		case WORKLOAD_VSUM:
 			workload_vsum(t);	
 			break;
+		
+		case WORKLOAD_FIBONACCI_IT:
+			workload_fibonacci_it(t);
+			break;
+		
 		default:
 			printf("wrong type %i\n", t->type);
 			exit(1);
@@ -202,7 +212,7 @@ static void* time_monitor ()
 int main (int argc, char **argv)
 {
 	pthread_t *ts;
-	uint64_t total_loops[N_WORKLOADS] = {};
+	uint64_t total_loops[N_WORKLOADS], max_total_loops;
 	int i;
 
 	if(getenv("OMP_NUM_THREADS"))
@@ -254,12 +264,19 @@ int main (int argc, char **argv)
 	pthread_join(ts[nt], NULL);
 		
 	printf("total time: %.3f\n", total_time/1000000);
+
+	max_total_loops = 0;	
+	for (i=0; i<N_WORKLOADS; i++)
+		total_loops[i] = 0;
 	
 	for (i=0; i<nt; i++) {
 		total_loops[threads[i].type] += threads[i].nloops;
+		max_total_loops += threads[i].nloops;
 	}
 	for (i=0; i<N_WORKLOADS; i++)
-	printf("Total loops %s: %llu\n", workload_str_table[i], total_loops[i]);
+		printf("Total loops %s: %llu\n", workload_str_table[i], total_loops[i]);
+	
+	printf("Max total loops: %llu\n", max_total_loops);
 	
 	return 0;
 }
