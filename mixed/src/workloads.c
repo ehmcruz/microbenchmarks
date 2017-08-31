@@ -71,19 +71,17 @@ void workload_pointer_chasing (thread_data_t *t)
 
 void workload_vsum_init_buffer (thread_data_t *t)
 {
-    uint32_t i, j, nels;
+    uint32_t i, nels;
+
+	t->buffer = NULL;
+	assert(posix_memalign(&t->buffer, CACHE_LINE_SIZE, STEP*sizeof(uint64_t)) == 0);
+	assert(t->buffer != NULL);
 
 
+	// initialize the buffer
 
-        t->buffer = NULL;
-        assert(posix_memalign(&t->buffer, CACHE_LINE_SIZE, STEP*sizeof(uint64_t)) == 0);
-        assert(t->buffer != NULL);
-
-
-        // initialize the buffer
-
-        for (j=0; j<STEP; j++)
-            t[i].buffer[j] = i;
+	for (i=0; i<STEP; i++)
+		t->buffer[i] = i;
 }
 
 void workload_vsum (thread_data_t *t)
