@@ -10,7 +10,9 @@ static const char *workload_str_table[] = {
     "H", 
     "P", 
     "V",
-    "F"
+    "F",
+    "N",
+    "I"
 };
 
 double GetTime(void)
@@ -152,6 +154,10 @@ static void parse_type_vector (char *str)
 			vec[i] = WORKLOAD_VSUM;
 		else if (!strcmp(tok, "f"))
 			vec[i] = WORKLOAD_FIBONACCI_IT;
+		else if (!strcmp(tok, "n"))
+			vec[i] = WORKLOAD_NONE;
+			else if (!strcmp(tok, "i"))
+			vec[i] = WORKLOAD_IDLE;
 		else {
 			printf("unknown workload type %s\n", tok);
 			exit(1);
@@ -190,6 +196,13 @@ static void* pthreads_callback (void *data)
 		
 		case WORKLOAD_FIBONACCI_IT:
 			workload_fibonacci_it(t);
+			break;
+		
+		case WORKLOAD_NONE:
+			break;
+		
+		case WORKLOAD_IDLE:
+			workload_idle(t);
 			break;
 		
 		default:

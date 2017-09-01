@@ -13,5 +13,6 @@ void workload_pointer_chasing (thread_data_t *t);
 void workload_vsum_init_buffer (thread_data_t *t);
 void workload_vsum (thread_data_t *t);
 void workload_fibonacci_it (thread_data_t *t);
+void workload_idle (thread_data_t *t);
 
 #endif

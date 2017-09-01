@@ -1,24 +1,78 @@
 #include "../headers/workloads.h"
 
+#if 1
 void workload_harmonic (thread_data_t *t) 
 {
     uint64_t i; 
     uint32_t j; 
-    double v; 
+    double v, div; 
  
     v = 0.0; 
-    i = 0; 
-     
-    while (alive) { 
-        for (j=0; j<STEP; j++) { 
-            v += 1.0 / (double)i; 
-            i++; 
+    i = 0;
+    div = 1.0;
+    
+    for (i=0; alive; i+=STEP) { 
+        for (j=0; j<STEP; j++) {
+            v += 1.0 / div; 
+            div += 1.0;
         } 
     } 
  
     t-> v = v; 
     t->nloops = i; 
 }
+#else
+#include <immintrin.h>
+#define DO_PACKED
+void workload_harmonic (thread_data_t *t) 
+{
+#ifdef DO_PACKED
+	uint64_t i; 
+	uint32_t j; 
+	
+	double partial[4];
+	__m256d ac, div, tmp, one, four;
+
+	ac = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+	one = _mm256_set_pd(1.0, 1.0, 1.0, 1.0);
+	div = _mm256_set_pd(1.0, 2.0, 3.0, 4.0);
+	four = _mm256_set_pd(4.0, 4.0, 4.0, 4.0);
+
+	for (i=0; alive; i+=STEP) { 
+		for (j=0; j<STEP; j+=4) {
+			tmp = _mm256_div_pd(one, div);
+			ac = _mm256_add_pd(ac, tmp);
+			div = _mm256_add_pd(div, four);
+		}
+	}
+	
+	_mm256_storeu_pd(partial, ac);
+	t->v = partial[0] + partial[1] + partial[2] + partial[3]; 
+
+	t->nloops = i;
+#else
+	uint64_t i; 
+	uint32_t j; 
+	
+	__m128d ac, div, tmp, one;
+
+	ac = _mm_set_sd(0.0);
+	one = _mm_set_sd(1.0);
+	div = _mm_set_sd(1.0);
+
+	for (i=0; alive; i+=STEP) { 
+		for (j=0; j<STEP; j+=1) {
+			tmp = _mm_div_sd(one, div);
+			ac = _mm_add_sd(ac, tmp);
+			div = _mm_add_sd(div, one);
+		}
+	}
+	
+	_mm_store_sd(&t->v, ac);
+	t->nloops = i;
+#endif
+}
+#endif
 
 void workload_pointer_chasing_init_buffer (thread_data_t *t, uint32_t buffer_size)
 {
@@ -118,5 +172,20 @@ void workload_fibonacci_it (thread_data_t *t)
 	
 	t->nloops = i;
 	t->v2 = fib;
+}
+
+void workload_idle (thread_data_t *t) 
+{
+	uint64_t i;
+
+	for (i=0; alive; i++) {
+		__asm__ __volatile__ ("pause");
+		__asm__ __volatile__ ("pause");
+		__asm__ __volatile__ ("pause");
+		__asm__ __volatile__ ("pause");
+		__asm__ __volatile__ ("pause");
+	}
+	
+	t->nloops = i;
 }
 
